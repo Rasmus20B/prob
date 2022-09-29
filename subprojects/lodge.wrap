@@ -1,0 +1,7 @@
+[wrap-git]
+directory = lodge
+url = git://git.jtateossian.uk/lodge
+revision = head
+
+[provides]
+lodge = ext_lodge

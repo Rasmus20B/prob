@@ -1,0 +1,5 @@
+1. Generate AST from source.
+2. Translate Generated AST from source into Three Address Code. 
+3. Generate Conditional Graph from the Three Address Code.
+4. Perform the probability analysis on Conditional Graph.
+
