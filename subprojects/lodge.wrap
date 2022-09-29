@@ -2,6 +2,5 @@
 directory = lodge
 url = git://git.jtateossian.uk/lodge
 revision = head
-
-[provides]
-lodge = ext_lodge
+[provide]
+lodge = lodge_dep
