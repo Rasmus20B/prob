@@ -9,11 +9,10 @@ namespace prob {
    keywords
 */
 
-AST::AST(const std::string path) { auto res = readSource(path); }
+AST::AST(const std::string path) { auto res = readSourceToBuffer(path); }
 
-int AST::readSource(const std::string path) {
+int AST::readSourceToBuffer(const std::string path) {
 
-  constexpr uint32_t BUF_SIZE = 16 * 1024;
   int fd = open(path.c_str(), O_RDONLY);
   if (!fd) {
     lodge::log.error("Error opening file");
@@ -21,9 +20,9 @@ int AST::readSource(const std::string path) {
   }
 
   posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL);
-  char buf[BUF_SIZE + 1];
+  std::array<char, BUF_SIZE + 1> buf;
 
-  while (size_t bytes_read = read(fd, buf, BUF_SIZE)) {
+  while (size_t bytes_read = read(fd, buf.begin(), BUF_SIZE)) {
 
     if (bytes_read == (size_t)-1) {
       lodge::log.error("error reading file");
@@ -38,18 +37,40 @@ int AST::readSource(const std::string path) {
   return 0;
 }
 
-std::string AST::getSource() { return this->source; }
+// std::string AST::getSource() { return this->source; }
 
-void AST::parse() {
+void AST::lex() {
 
-  char cur{};
+  auto bp = source.begin();
+  auto fp = source.begin();
 
-  switch (cur) {
-  case '+':
-    // it's a plus, add it to the AST and ready 2 leaves
-    break;
+  while(*bp) {
+    switch (*bp) {
+      case '(':
+        lodge::log.info("Found an LPAREN");
+        break;
+      case ')':
+        lodge::log.info("Found an RPAREN");
+        break;
+      case '*':
+        break;
+      case '+':
+        break;
+      case ',':
+        break;
+      case '-':
+        break;
+      case '.':
+        break;
+      case '\n':
+        break;
+      case EOF:
+        lodge::log.info("Found EOF");
+        break;
+      default:
+        break;
+      }
+    bp++;
   }
-
-  return;
 }
 } // namespace prob
