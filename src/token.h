@@ -49,11 +49,13 @@ namespace prob {
     { "{"       , OP_CURL },
     { "*"       , MULTIPLY },
     { "-"       , MINUS },
+    { ";"       , SEMICOLON }
   };
 
   struct Token {
   Token() = default;
   std::variant<int, char, float, long, double, short>  val;
   tokenType m_type;
+  std::string m_stype;
   };
 }

@@ -37,8 +37,8 @@ public:
 
 private:
   char next{};
-  tokenType comp_keywords(const char * key);
-  int lex_buf_push(const char * key);
+  tokenType comp_keywords(std::string &key);
+  int lex_buf_push(std::string &key, tokenType type);
   std::string m_path;
   std::size_t bytes_read; 
   std::array<char, BUF_SIZE+1> buf1{};

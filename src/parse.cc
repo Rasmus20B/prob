@@ -9,22 +9,8 @@ void AST::set_file(std::string path) { m_path = path;}
 
 void AST::print_tokens() {
   
-  int found =0;
-  for(auto &i : toks) {
-    for(auto &j : TKeywords) {
-      if(j.second == i.m_type) {
-        lodge::log.info("{}", j.first);
-        found =1;
-      }
-    }
-    if(!found) {
-      for(auto &k : TOps) {
-        if(k.second == i.m_type) {
-          lodge::log.info("{}", k.first);
-        }
-      }
-    }
-    found = 0;
+  for(auto &i: toks) {
+    lodge::log.info("{}", i.m_stype);
   }
 }
 
@@ -47,13 +33,36 @@ int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 1>& buf) {
 
 // std::string AST::getSource() { return this->source; }
 
-tokenType AST::comp_keywords(const char * key) {
-  auto s = TKeywords.find(static_cast<std::string>(key));
+tokenType AST::comp_keywords(std::string &key) {
+  auto s = TKeywords.find(key);
   if(s != TKeywords.end()) {
     return s->second;
   } else {
     return IDENTIFIER;
   }
+}
+
+int AST::lex_buf_push(std::string &key, tokenType type) {
+
+  Token t{};
+  if(key.size() > 0) {
+  t.m_type = comp_keywords(key);
+  t.m_stype = key;
+  toks.push_back(t);
+  }
+  key.clear();
+  /* We dont care about newlines, spaces, etc */
+  if(type == NA) {
+    return 0;
+  }
+  t.m_type = type;
+  t.m_stype.clear();
+  for(auto &i: TOps) {
+    if(t.m_type == i.second)
+      t.m_stype = i.first;
+  }
+  toks.push_back(t);
+  return 0;
 }
 
 void AST::lex() {
@@ -69,139 +78,75 @@ void AST::lex() {
 
   // FIRST NEED TO GET TO THE FIRST CHARACTER (PAST WHITESPACE)
   //
-  char tokBuf[128];
+  std::string tokBuf;
   int count = 0;
 
   fp = bp;
   while(*fp) {
-    Token t{};
     switch (*fp) {
       case '(':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
-        toks.push_back(t);
+        lex_buf_push(tokBuf, OP_PAREN);
         count = 0;
-        t.m_type = OP_PAREN;
-        toks.push_back(t);
         break;
       case ')':
-        if((t.m_type = comp_keywords(tokBuf)) == NA) {
-          /* Load as identifier */
-        }
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, END_PAREN);
         count = 0;
-        toks.push_back(t);
-        t.m_type = END_PAREN;
-        toks.push_back(t);
         break;
       case '*':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, MULTIPLY);
         count = 0;
-        toks.push_back(t);
-        t.m_type = MULTIPLY;
-        toks.push_back(t);
         break;
       case '+':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, ADD);
         count = 0;
-        toks.push_back(t);
-        t.m_type = ADD;
-        toks.push_back(t);
         break;
       case '/':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, DIVIDE);
         count = 0;
-        toks.push_back(t);
-        t.m_type = DIVIDE;
-        toks.push_back(t);
-
         break;
       case ',':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, COMMA);
         count = 0;
-        toks.push_back(t);
-        t.m_type = COMMA;
-        toks.push_back(t);
         break;
       case '-':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, MINUS);
         count = 0;
-        toks.push_back(t);
-        t.m_type = MINUS;
-        toks.push_back(t);
         break;
       case '.':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, DOT);
         count = 0;
-        toks.push_back(t);
-        t.m_type = DOT;
-        toks.push_back(t);
         break;
       case '=':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, EQ);
         count = 0;
-        toks.push_back(t);
-        t.m_type = EQ;
-        toks.push_back(t);
-
         break;
       case '\n':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, NA);
         count = 0;
-        toks.push_back(t);
         break;
       case ' ':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, NA);
         count = 0;
-        toks.push_back(t);
         break;
       case '{':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, OP_CURL);
         count = 0;
-        toks.push_back(t);
-        t.m_type = OP_CURL;
-        toks.push_back(t);
-
         break;
       case '}':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, END_CURL);
         count = 0;
-        toks.push_back(t);
-        t.m_type = END_CURL;
-        toks.push_back(t);
-
-       break;
+        break;
       case ';':
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
+        lex_buf_push(tokBuf, SEMICOLON);
         count = 0;
-        toks.push_back(t);
-        t.m_type = SEMICOLON;
-        toks.push_back(t);
-
-      break;
+        break;
       case EOF:
-        t.m_type = comp_keywords(tokBuf);
-        memset(tokBuf, 0, sizeof(tokBuf) - 1);
-        toks.push_back(t);
-        t.m_type = DOT;
-        toks.push_back(t);
-
+        lex_buf_push(tokBuf, NA);
+        count = 0;
         break;
       // DEFAULT WILL ACT AS KEYWORDS AND IDENTIFIERS
       default:
-        tokBuf[count] = *fp;
+        tokBuf += *fp;
         count++;
         break;
       }
