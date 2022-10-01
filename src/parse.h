@@ -20,7 +20,7 @@
 
 namespace prob {
 
-constexpr uint32_t BUF_SIZE = 18;
+constexpr uint32_t BUF_SIZE = 4096;
 struct Node {
   Node *left;
   Node *right;
