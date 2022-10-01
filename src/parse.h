@@ -20,7 +20,7 @@
 
 namespace prob {
 
-constexpr uint32_t BUF_SIZE = 4096;
+constexpr uint32_t BUF_SIZE = 18;
 struct Node {
   Node *left;
   Node *right;
@@ -29,7 +29,7 @@ class AST {
 public:
   AST() = default;
   AST(const std::string path);
-  [[nodiscard]] int readSourceToBuffer(std::array<char, BUF_SIZE + 1>& buf);
+  [[nodiscard]] int readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf);
   void set_file(std::string path);
   // [[nodiscard]] std::string getSource();
   void lex();
@@ -40,11 +40,12 @@ private:
   tokenType comp_keywords(std::string &key);
   int lex_buf_push(std::string &key, tokenType type);
   std::string m_path;
-  std::size_t bytes_read; 
-  std::array<char, BUF_SIZE+1> buf1{};
-  std::array<char, BUF_SIZE+1> buf2{};
-  std::array<char, BUF_SIZE+1>::iterator bp = buf1.begin();
-  std::array<char, BUF_SIZE+1>::iterator fp = buf1.begin();
+  std::size_t bytes_read = 0; 
+  std::array<char, BUF_SIZE+2> buf1;
+  std::array<char, BUF_SIZE+2> buf2;
+  std::array<char, BUF_SIZE+2>::iterator bp = buf1.begin();
+  std::array<char, BUF_SIZE+2>::iterator fp = buf1.begin();
   std::vector<Token> toks{};
+  std::size_t lc{0};
 };
 } // namespace prob

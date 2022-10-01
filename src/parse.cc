@@ -14,8 +14,9 @@ void AST::print_tokens() {
   }
 }
 
-int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 1>& buf) {
+int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
 
+  buf.fill(0);
   auto fd = open(m_path.c_str(), O_RDONLY);
   if (!fd) {
     lodge::log.error("Error opening file");
@@ -27,7 +28,13 @@ int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 1>& buf) {
   }
 
   posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL);
-  bytes_read = read(fd, buf.begin(), BUF_SIZE);
+
+  if((bytes_read += (read(fd, buf.begin(), BUF_SIZE + 2))) == (size_t)-1) {
+    lodge::log.error("Unable to read file");
+    return -1;
+  }
+  auto i = buf.end();
+  *i = EOF;
   return 0;
 }
 
@@ -70,19 +77,14 @@ void AST::lex() {
   if(readSourceToBuffer(buf1) == -1) {
     lodge::log.error("Failed to Read Source File");
   }
-  if(readSourceToBuffer(buf2) == -1) {
-    lodge::log.error("Failed to Read Source File");
-  }
-  buf1.at(BUF_SIZE) = EOF;
-  buf2.at(BUF_SIZE) = EOF;
-
   // FIRST NEED TO GET TO THE FIRST CHARACTER (PAST WHITESPACE)
   //
   std::string tokBuf;
   int count = 0;
 
   fp = bp;
-  while(*fp) {
+  while(*fp || *fp == EOF) {
+
     switch (*fp) {
       case '(':
         lex_buf_push(tokBuf, OP_PAREN);
@@ -122,6 +124,7 @@ void AST::lex() {
         break;
       case '\n':
         lex_buf_push(tokBuf, NA);
+        lc++;
         count = 0;
         break;
       case ' ':
@@ -141,8 +144,24 @@ void AST::lex() {
         count = 0;
         break;
       case EOF:
-        lex_buf_push(tokBuf, NA);
-        count = 0;
+        // Check if we are at the end of a buffer in pair
+        if(fp == buf1.end() ) {
+          /* load in second buffer */
+          if(readSourceToBuffer(buf2) == -1) {
+            lodge::log.error("Failed to Read Source File");
+          }
+          fp = buf2.begin();
+        } else if (fp == buf2.end() ) {
+          /* reload the first buffer */
+          if(readSourceToBuffer(buf1) == -1) {
+            lodge::log.error("Failed to Read Source File");
+          }
+          fp = buf1.begin();
+        } else {
+          /* terminate lexer */
+          lex_buf_push(tokBuf, NA);
+          count = 0;
+        }
         break;
       // DEFAULT WILL ACT AS KEYWORDS AND IDENTIFIERS
       default:
