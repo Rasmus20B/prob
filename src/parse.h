@@ -28,13 +28,15 @@ class AST {
 public:
   AST() = default;
   AST(const std::string path);
-  [[nodiscard]] int readSourceToBuffer(const std::string path);
+  [[nodiscard]] int readSourceToBuffer();
+  void set_file(std::string path);
   // [[nodiscard]] std::string getSource();
   void lex();
 
 private:
   Node *head;
   char next{};
+  std::string m_path;
   std::array<char, BUF_SIZE+1> source{};
   std::array<char, BUF_SIZE+1>::iterator bp = source.begin();
   std::array<char, BUF_SIZE+1>::iterator fp = source.begin();

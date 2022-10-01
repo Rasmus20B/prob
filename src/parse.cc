@@ -9,11 +9,13 @@ namespace prob {
    keywords
 */
 
-AST::AST(const std::string path) { auto res = readSourceToBuffer(path); }
+AST::AST(const std::string path) { auto res = readSourceToBuffer(); }
 
-int AST::readSourceToBuffer(const std::string path) {
+void AST::set_file(std::string path) { m_path = path;}
 
-  int fd = open(path.c_str(), O_RDONLY);
+int AST::readSourceToBuffer() {
+
+  int fd = open(m_path.c_str(), O_RDONLY);
   if (!fd) {
     lodge::log.error("Error opening file");
     return -1;

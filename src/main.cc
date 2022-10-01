@@ -10,7 +10,8 @@ int main(int argc, char **argv) {
   lodge::log.start();
   prob::AST t;
 
-  if (t.readSourceToBuffer(argv[1])) {
+  t.set_file(argv[1]);
+  if (t.readSourceToBuffer()) {
     lodge::log.error("Error: Unable to read source");
   }
   prob::probability p;
