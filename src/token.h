@@ -47,6 +47,7 @@ namespace prob {
     { "("       , OP_PAREN },
     { ")"       , END_PAREN },
     { "{"       , OP_CURL },
+    { "}"       , END_CURL },
     { "*"       , MULTIPLY },
     { "-"       , MINUS },
     { ";"       , SEMICOLON }

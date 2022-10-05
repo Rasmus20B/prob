@@ -3,13 +3,13 @@
 
 namespace prob {
 
-// AST::AST(const std::string path) { auto res = readSourceToBuffer(buf1); }
+// AST::AST(const std::string path) { auto res = readSourceToBuffer(); }
 
 void AST::set_file(std::string path) { m_path = path;}
 
 void AST::print_tokens() {
   
-  for(auto &i: toks) {
+  for(auto &i: toks ) {
     lodge::log.info("{}", i.m_stype);
   }
 }
@@ -53,9 +53,9 @@ int AST::lex_buf_push(std::string &key, tokenType type) {
 
   Token t{};
   if(key.size() > 0) {
-  t.m_type = comp_keywords(key);
-  t.m_stype = key;
-  toks.push_back(t);
+    t.m_type = comp_keywords(key);
+    t.m_stype = key;
+    toks.push_back(t);
   }
   key.clear();
   /* We dont care about newlines, spaces, etc */
@@ -65,8 +65,9 @@ int AST::lex_buf_push(std::string &key, tokenType type) {
   t.m_type = type;
   t.m_stype.clear();
   for(auto &i: TOps) {
-    if(t.m_type == i.second)
+    if(t.m_type == i.second) {
       t.m_stype = i.first;
+    }
   }
   toks.push_back(t);
   return 0;
@@ -84,6 +85,7 @@ void AST::lex() {
 
   fp = bp;
   while(*fp || *fp == EOF) {
+    std::cout << *fp << std::endl;
 
     switch (*fp) {
       case '(':
@@ -151,12 +153,18 @@ void AST::lex() {
             lodge::log.error("Failed to Read Source File");
           }
           fp = buf2.begin();
+          lex_buf_push(tokBuf, NA);
+          count = 0;
+
         } else if (fp == buf2.end() ) {
           /* reload the first buffer */
           if(readSourceToBuffer(buf1) == -1) {
             lodge::log.error("Failed to Read Source File");
           }
           fp = buf1.begin();
+          lex_buf_push(tokBuf, NA);
+          count = 0;
+
         } else {
           /* terminate lexer */
           lex_buf_push(tokBuf, NA);
