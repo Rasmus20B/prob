@@ -28,10 +28,9 @@ struct Node {
 class AST {
 public:
   AST() = default;
-  AST(const std::string path);
+  AST(const std::string &path);
   [[nodiscard]] int readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf);
-  void set_file(std::string path);
-  // [[nodiscard]] std::string getSource();
+  void set_file(std::string_view path);
   void lex();
   void print_tokens();
 

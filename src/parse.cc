@@ -3,13 +3,11 @@
 
 namespace prob {
 
-// AST::AST(const std::string path) { auto res = readSourceToBuffer(); }
-
-void AST::set_file(std::string path) { m_path = path;}
+void AST::set_file(std::string_view path) { m_path = path;}
 
 void AST::print_tokens() {
   
-  for(auto &i: toks ) {
+  for(auto i: toks ) {
     lodge::log.info("{}", i.m_stype);
   }
 }
@@ -37,8 +35,6 @@ int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
   *i = EOF;
   return 0;
 }
-
-// std::string AST::getSource() { return this->source; }
 
 tokenType AST::comp_keywords(std::string &key) {
   auto s = TKeywords.find(key);
@@ -85,8 +81,6 @@ void AST::lex() {
 
   fp = bp;
   while(*fp || *fp == EOF) {
-    std::cout << *fp << std::endl;
-
     switch (*fp) {
       case '(':
         lex_buf_push(tokBuf, OP_PAREN);
