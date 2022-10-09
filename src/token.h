@@ -6,7 +6,7 @@
 #include <unordered_map> 
 
 namespace prob {
-  enum tokenType { FUNCTION, IDENTIFIER, OPERATOR, IF, ELSE, FOR, DO, WHILE, BREAK, CASE, CHAR, COMMA, CONST, CONTINUE, DEFAULT, DOUBLE, ENUM, EXTERN, FLOAT, GOTO, INT, LONG, MAIN, REGISTER, RETURN, SHORT, SIGNED, SIZEOF, STATIC, STRUCT, SWITCH, TYPEDEF, UNION, UNSIGNED, VOID, VOLATILE, EQ, ADD, MINUS, DIVIDE, MULTIPLY, NOTEQ, SEMICOLON, OP_PAREN, END_PAREN, OP_CURL, END_CURL, DOT, NA };
+  enum tokenType { FUNCTION, IDENTIFIER, OPERATOR, NUM_LITERAL, STRING_LITERAL, IF, ELSE, FOR, DO, WHILE, BREAK, CASE, CHAR, COMMA, CONST, CONTINUE, DEFAULT, DOUBLE, ENUM, EXTERN, FLOAT, GOTO, INT, LONG, MAIN, REGISTER, RETURN, SHORT, SIGNED, SIZEOF, STATIC, STRUCT, SWITCH, TYPEDEF, UNION, UNSIGNED, VOID, VOLATILE, EQ, ADD, MINUS, DIVIDE, MULTIPLY, NOTEQ, SEMICOLON, OP_PAREN, END_PAREN, OP_CURL, END_CURL, DOT, NA };
 
   const std::unordered_map<std::string, tokenType> TKeywords = {
     { "break"   , BREAK },
@@ -24,7 +24,6 @@ namespace prob {
     { "if"      , IF },
     { "int"     , INT },
     { "long"    , LONG },
-    { "main"    , MAIN },
     { "register", REGISTER},
     { "return"  , RETURN },
     { "short"   , SHORT },
@@ -55,8 +54,8 @@ namespace prob {
 
   struct Token {
   Token() = default;
-  std::variant<int, char, float, long, double, short>  val;
-  tokenType m_type;
-  std::string m_stype;
+  std::variant<int, std::string, char, float, long, double, short>  val;
+  tokenType m_type = NA;
+  std::string m_stype{};
   };
 }

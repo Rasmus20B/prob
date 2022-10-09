@@ -12,19 +12,78 @@ void AST::print_tokens() {
   }
 }
 
-int AST::parse_token(Token t) {
+int AST::parse_int() {
+  t_it++;
+  switch(t_it->m_type) {
+    case tokenType::IDENTIFIER:
+      lodge::log.info("FOUND AN IDENTIFIER");
+      parse_identifier();
+      return 0;
+    default:
+      // ERROR
+      lodge::log.error("Expected identifier after typename!");
+      return -1;
+      break;
+  }
+}
 
-  switch(t.m_type) {
+int AST::parse_function_decl(tokenType type, std::string id) {
+    
+    //Add function to tree as id and type   
+  lodge::log.info("Found function {}", id);
+  return 0;
+}
 
+
+int AST::parse_identifier() {
+  
+  t_it++;
+  switch(t_it->m_type) {
+    case tokenType::SEMICOLON:
+      lodge::log.info("Found a semicolon");
+      return 0;
+    case tokenType::OP_PAREN:
+      lodge::log.info("Found opening paren");
+      // if there is a type written before id, it's a declaration
+      if((t_it - 2)->m_type == INT) {
+        parse_function_decl((t_it - 2)->m_type, (t_it - 1)->m_stype);
+      } else {
+        // if its not, it's a function call
+      }
+      return 0;
+    default:
+      return -1;
+      
+  }
+  return 0;
+
+}
+
+int AST::parse_token() {
+
+  switch(t_it->m_type) {
+    case tokenType::IDENTIFIER:
+      lodge::log.info("FOUND AN IDENTIFIER");
+      parse_identifier();
+      break;
+    case tokenType::INT:
+      lodge::log.info("FOUND AN INT");
+      parse_int();
+      break;
+    default:
+      return -1;
+      break;
   }
   return 0;
 }
 
 int AST::parse_program() {
-  for(auto &i : toks) {
-    if(parse_token(i) == -1) {
+  t_it = toks.begin();
+  while(true) {
+    if(parse_token() == -1) {
       return -1;
     }
+    t_it++;
   }
 
   return 0;
@@ -55,13 +114,16 @@ int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
   *i = EOF;
   return 0;
 }
-#elif __WIN32__
+#elif WINDOWSONE
 int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
 
+  buf.fill(0);
   std::ifstream ifs;
   ifs.open(source);
 
-  buf.fill(0);
+  ifs.read(buf.begin, BUF_SIZE + 2);
+  bytes_read += ifs.gcount();
+
   auto i = buf.end();
   *i = EOF;
   return 0;

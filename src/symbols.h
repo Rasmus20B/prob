@@ -1,9 +1,8 @@
 #pragma once
 
 #include <array>
+#include <unordered_map> 
 #include <string>
 
-static const std::array<char, 20> tokens = {'+', '-', '*', '/'};
-
-static const std::array<std::string, 10> keywords = {
-    "if", "for", "int", "char", "float", "double", "short", "long"};
+static std::unordered_map<std::string, int> symbols {}; 
+static int n_syms = 0;

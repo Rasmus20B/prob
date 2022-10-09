@@ -12,7 +12,8 @@ int main(int argc, char **argv) {
 
   t.set_file(argv[1]);
   t.lex();
-  t.print_tokens();
+  // t.print_tokens();
+  t.parse_program();
 
   lodge::log.stop();
 

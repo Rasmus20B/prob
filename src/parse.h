@@ -38,12 +38,13 @@ public:
 private:
   tokenType comp_keywords(std::string &key);
   int lex_buf_push(std::string &key, tokenType type);
-  int parse_token(Token t);
-  int parse_function(Token t);
-  int parse_identifier(Token t);
-  int parse_number(Token t);
-  int parse_punctuation(Token t);
-  int parse_keyword(Token t);
+  int parse_token();
+  int parse_function_decl(tokenType type, std::string id);
+  int parse_identifier();
+  int parse_number();
+  int parse_punctuation();
+  int parse_keyword();
+  int parse_int();
 
 private:
   char next{};
@@ -54,6 +55,7 @@ private:
   std::array<char, BUF_SIZE+2>::iterator bp = buf1.begin();
   std::array<char, BUF_SIZE+2>::iterator fp = buf1.begin();
   std::vector<Token> toks{};
+  std::vector<Token>::iterator t_it = toks.begin();
   std::size_t lc{0};
 };
 } // namespace prob
