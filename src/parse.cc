@@ -12,6 +12,26 @@ void AST::print_tokens() {
   }
 }
 
+int AST::parse_token(Token t) {
+
+  switch(t.m_type) {
+
+  }
+  return 0;
+}
+
+int AST::parse_program() {
+  for(auto &i : toks) {
+    if(parse_token(i) == -1) {
+      return -1;
+    }
+  }
+
+  return 0;
+
+}
+
+#ifdef __linux__
 int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
 
   buf.fill(0);
@@ -35,6 +55,18 @@ int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
   *i = EOF;
   return 0;
 }
+#elif __WIN32__
+int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
+
+  std::ifstream ifs;
+  ifs.open(source);
+
+  buf.fill(0);
+  auto i = buf.end();
+  *i = EOF;
+  return 0;
+}
+#endif
 
 tokenType AST::comp_keywords(std::string &key) {
   auto s = TKeywords.find(key);

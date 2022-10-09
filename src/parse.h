@@ -33,11 +33,20 @@ public:
   void set_file(std::string_view path);
   void lex();
   void print_tokens();
+  int parse_program();
+
+private:
+  tokenType comp_keywords(std::string &key);
+  int lex_buf_push(std::string &key, tokenType type);
+  int parse_token(Token t);
+  int parse_function(Token t);
+  int parse_identifier(Token t);
+  int parse_number(Token t);
+  int parse_punctuation(Token t);
+  int parse_keyword(Token t);
 
 private:
   char next{};
-  tokenType comp_keywords(std::string &key);
-  int lex_buf_push(std::string &key, tokenType type);
   std::string m_path;
   std::size_t bytes_read = 0; 
   std::array<char, BUF_SIZE+2> buf1;
