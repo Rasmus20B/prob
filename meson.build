@@ -11,4 +11,4 @@ lodge_dep = dependency('lodge', fallback: 'lodge')
 # lodge_proj = subproject('lodge')
 # lodge_dep = lodge_proj.get_variable('lodge_dep')
 
-prob = executable('prob', sources : [ 'src/main.cc', 'src/prob.cc', 'src/parse.cc', 'src/prob.h', 'src/p_val.h', 'src/parse.h', 'src/tac.h', 'src/token.h' ], dependencies : [ lodge_dep ] )
+prob = executable('prob', sources : [ 'src/main.cc', 'src/prob.cc', 'src/parse.cc', 'src/ast.cc', 'src/ast.h', 'src/prob.h', 'src/p_val.h', 'src/parse.h', 'src/tac.h', 'src/token.h' ], dependencies : [ lodge_dep ] )

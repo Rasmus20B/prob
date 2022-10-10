@@ -17,6 +17,7 @@
 #include <lodge.h>
 
 #include "token.h"
+#include "ast.h"
 
 namespace prob {
 
@@ -57,5 +58,6 @@ private:
   std::vector<Token> toks{};
   std::vector<Token>::iterator t_it = toks.begin();
   std::size_t lc{0};
+  ast_node head;
 };
 } // namespace prob

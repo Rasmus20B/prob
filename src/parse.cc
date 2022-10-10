@@ -20,17 +20,21 @@ int AST::parse_int() {
       parse_identifier();
       return 0;
     default:
-      // ERROR
       lodge::log.error("Expected identifier after typename!");
       return -1;
       break;
   }
 }
 
-int AST::parse_function_decl(tokenType type, std::string id) {
+int AST::parse_function_decl(tokenType ptype, std::string id) {
     
-    //Add function to tree as id and type   
+  //Add function declaration to tree as id and type   
   lodge::log.info("Found function {}", id);
+
+  add_node(head, FUNCTION_DECL, ptype, id);
+  while(t_it->m_type != END_PAREN) { t_it++; }
+
+  lodge::log.info("Found end parenthesis");
   return 0;
 }
 
@@ -61,6 +65,7 @@ int AST::parse_identifier() {
 
 int AST::parse_token() {
 
+  /* When an { is found, this is the start of a compoudnd statement */
   switch(t_it->m_type) {
     case tokenType::IDENTIFIER:
       lodge::log.info("FOUND AN IDENTIFIER");
@@ -76,7 +81,7 @@ int AST::parse_token() {
   }
   return 0;
 }
-
+ 
 int AST::parse_program() {
   t_it = toks.begin();
   while(true) {
@@ -92,7 +97,6 @@ int AST::parse_program() {
 
 #ifdef __linux__
 int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
-
   buf.fill(0);
   auto fd = open(m_path.c_str(), O_RDONLY);
   if (!fd) {
