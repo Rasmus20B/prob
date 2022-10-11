@@ -1,3 +1,5 @@
+int r();
+
 int r() { return 1;}
 
 int main() {

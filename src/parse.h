@@ -41,6 +41,12 @@ private:
   int lex_buf_push(std::string &key, tokenType type);
   int parse_token();
   int parse_function_decl(tokenType type, std::string id);
+  int parse_statement();
+  int parse_compound_statement();
+  int parse_if_statement();
+  int parse_var_declr_statement();
+  int parse_var_assignment_statement();
+  int parse_expr();
   int parse_identifier();
   int parse_number();
   int parse_punctuation();

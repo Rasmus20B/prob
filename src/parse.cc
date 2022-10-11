@@ -8,7 +8,7 @@ void AST::set_file(std::string_view path) { m_path = path;}
 void AST::print_tokens() {
   
   for(auto i: toks ) {
-    lodge::log.info("{}", i.m_stype);
+    lodge::log.info("{}, {}", i.m_stype, i.m_type);
   }
 }
 
@@ -35,6 +35,20 @@ int AST::parse_function_decl(tokenType ptype, std::string id) {
   while(t_it->m_type != END_PAREN) { t_it++; }
 
   lodge::log.info("Found end parenthesis");
+
+  t_it++;
+  switch(t_it->m_type) {
+    case tokenType::OP_CURL:
+      //start compound statement
+      lodge::log.info("FOUND start of compound statement");
+      break;
+    case tokenType::SEMICOLON:
+      lodge::log.info("Found declaration without definition");
+      return 0;
+    default:
+      lodge::log.error("Expected Semicolon or statement, found {}:{}", t_it->m_stype, t_it->m_type);
+      return -1;
+  }
   return 0;
 }
 
@@ -57,8 +71,17 @@ int AST::parse_identifier() {
       return 0;
     default:
       return -1;
-      
   }
+  return 0;
+
+}
+
+int AST::parse_compound_statement() { 
+  return 0; 
+}
+
+int AST::parse_statement() {
+
   return 0;
 
 }
@@ -74,6 +97,9 @@ int AST::parse_token() {
     case tokenType::INT:
       lodge::log.info("FOUND AN INT");
       parse_int();
+      break;
+    case tokenType::OP_CURL:
+      //Begin compound statement
       break;
     default:
       return -1;
