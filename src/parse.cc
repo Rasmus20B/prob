@@ -149,6 +149,7 @@ int AST::lex_buf_push(std::string &key, tokenType type) {
   if(key.size() > 0) {
     t.m_type = comp_keywords(key);
     t.m_stype = key;
+    t.line = lc;
     toks.push_back(t);
   }
   key.clear();

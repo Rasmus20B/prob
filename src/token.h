@@ -57,5 +57,6 @@ namespace prob {
   std::variant<int, std::string, char, float, long, double, short>  val;
   tokenType m_type = NA;
   std::string m_stype{};
+  int line{};
   };
 }
