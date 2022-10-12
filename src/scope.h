@@ -1,0 +1,3 @@
+struct Scope {
+  int level{};
+};

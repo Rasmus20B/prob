@@ -41,6 +41,7 @@ int AST::parse_function_decl(tokenType ptype, std::string id) {
     case tokenType::OP_CURL:
       //start compound statement
       lodge::log.info("FOUND start of compound statement");
+      parse_compound_statement();
       break;
     case tokenType::SEMICOLON:
       lodge::log.info("Found declaration without definition");
@@ -77,6 +78,8 @@ int AST::parse_identifier() {
 }
 
 int AST::parse_compound_statement() { 
+  while(t_it->m_type != END_CURL) { t_it++; }
+  lodge::log.info("Finished compound statement");
   return 0; 
 }
 
@@ -144,7 +147,7 @@ int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
   *i = EOF;
   return 0;
 }
-#elif WINDOWSONE
+#elif __WIN32__
 int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
 
   buf.fill(0);
