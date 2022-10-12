@@ -26,6 +26,13 @@ class Stack {
     return *sp;
   }
 
+  std::optional<T> peek() {
+    if(empty()) 
+      return {};
+
+    return *sp;
+  }
+
   
   std::array<T, 256> c{};
   typename std::array<T, 256>::iterator sp = c.begin();

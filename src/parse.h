@@ -16,6 +16,7 @@
 
 #include <lodge.h>
 
+#include "scope.h"
 #include "token.h"
 #include "ast.h"
 
@@ -39,15 +40,20 @@ public:
 private:
   tokenType comp_keywords(std::string &key);
   int lex_buf_push(std::string &key, tokenType type);
+  int lex_buf_push(std::string &key, tokenType type, int num);
+  int lex_buf_push(std::string &key, tokenType type, std::string& s_literal);
+  int readInt();
   int parse_token();
   int parse_function_decl(tokenType type, std::string id);
   int parse_statement();
   int parse_compound_statement();
   int parse_if_statement();
-  int parse_var_declr_statement();
+  int parse_var_declr_statement(tokenType type, std::string id);
   int parse_var_assignment_statement();
-  int parse_expr();
+  int parse_function_or_assignment();
+  int parse_expr(std::vector<Token> toks);
   int parse_identifier();
+  int parse_return_statement();
   int parse_number();
   int parse_punctuation();
   int parse_keyword();
@@ -64,6 +70,7 @@ private:
   std::vector<Token> toks{};
   std::vector<Token>::iterator t_it = toks.begin();
   std::size_t lc{0};
+  Stack<Scope> s;
   ast_node head;
 };
 } // namespace prob

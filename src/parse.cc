@@ -1,5 +1,6 @@
 #include "parse.h"
 #include "src/token.h"
+#include <string>
 
 namespace prob {
 
@@ -8,7 +9,14 @@ void AST::set_file(std::string_view path) { m_path = path;}
 void AST::print_tokens() {
   
   for(auto i: toks ) {
-    lodge::log.info("{}, {}", i.m_stype, i.m_type);
+    if(i.m_type == NUM_LITERAL) {
+      lodge::log.info("{}, {}", i.m_type, std::get<int>(i.val));
+    }
+    else if(i.m_type == STRING_LITERAL) {
+    lodge::log.info("{}, {}", i.m_type, std::get<std::string>(i.val));
+    } else {
+      lodge::log.info("{}, {}", i.m_stype, i.m_type);
+    }
   }
 }
 
@@ -53,6 +61,22 @@ int AST::parse_function_decl(tokenType ptype, std::string id) {
   return 0;
 }
 
+int AST::parse_expr(std::vector<Token> toks) {
+
+  return 0;
+
+}
+
+int AST::parse_var_declr_statement(tokenType type, std::string id) {
+  lodge::log.info("Found variable declaration {}", id);
+  t_it++;
+  std::vector<Token> l_vals{};
+  while(t_it->m_type != tokenType::SEMICOLON) { l_vals.push_back(*t_it); lodge::log.info("pushed {} to lvals", std::get<int>(t_it->val)); t_it++; }
+  lodge::log.info("filled lval vector");
+  parse_expr(l_vals);
+  return 0;
+}
+
 
 int AST::parse_identifier() {
   
@@ -70,6 +94,14 @@ int AST::parse_identifier() {
         // if its not, it's a function call
       }
       return 0;
+    case tokenType::EQ:
+      lodge::log.info("Found an assignment operator(=)");
+      if((t_it - 2)->m_type == INT) {
+        parse_var_declr_statement((t_it - 2)->m_type, (t_it - 1)->m_stype);
+      } else {
+
+      }
+      return 0;
     default:
       return -1;
   }
@@ -78,12 +110,80 @@ int AST::parse_identifier() {
 }
 
 int AST::parse_compound_statement() { 
-  while(t_it->m_type != END_CURL) { t_it++; }
+  Scope scope{};
+  auto p = s.peek();
+  if(p.has_value()) {
+    scope.parent = p->addr;
+  }
+  s.push(scope);
+  while(t_it->m_type != END_CURL) { parse_statement(); }
   lodge::log.info("Finished compound statement");
   return 0; 
 }
 
+int AST::parse_var_assignment_statement() {
+  return 0;
+}
+
+int AST::parse_function_or_assignment() {
+  t_it++;
+  switch(t_it->m_type) {
+    case tokenType::OP_PAREN:
+      lodge::log.info("Found function call");
+      //its a function call
+      return 0;
+    case tokenType::EQ:
+      if((t_it - 2)->m_type == INT) {
+        parse_var_declr_statement((t_it - 2)->m_type, (t_it - 1)->m_stype);
+      } else {
+        // var assignment rather than decl
+        parse_var_assignment_statement();
+      }
+      break;
+    default:
+      lodge::log.error("Expected paren or equals");
+      return -1;
+  }
+  return 0;
+}
+
+int AST::parse_return_statement() {
+
+  std::vector<Token> l_vals{};
+  t_it++;
+  while(t_it->m_type != tokenType::SEMICOLON) { l_vals.push_back(*t_it); lodge::log.info("pushed {} to lvals", std::get<int>(t_it->val)); t_it++; }
+  lodge::log.info("filled lval vector");
+  parse_expr(l_vals);
+
+  return 0;
+}
+
 int AST::parse_statement() {
+
+  t_it++;
+  switch(t_it->m_type) {
+    case tokenType::OP_CURL:
+      parse_compound_statement();
+      return 0;
+    case tokenType::IF:
+      // parse_if_statement();
+      return 0;
+    case tokenType::SEMICOLON:
+      return 0;
+    case tokenType::IDENTIFIER:
+      // Check if it's a function or a variable assignment via '('
+      parse_function_or_assignment();
+      return 0;
+    case tokenType::NUM_LITERAL:
+      lodge::log.info("FOUND A NUM LITERAL {}", std::get<int>(t_it->val));
+      return 0;
+    case tokenType::RETURN:
+      lodge::log.info("Found a return statement");
+      parse_return_statement();
+      return 0;
+    default:
+      return 0;
+  }
 
   return 0;
 
@@ -101,6 +201,9 @@ int AST::parse_token() {
       lodge::log.info("FOUND AN INT");
       parse_int();
       break;
+    case tokenType::NUM_LITERAL:
+      lodge::log.info("Found a constant Int");
+      break;
     case tokenType::OP_CURL:
       //Begin compound statement
       break;
@@ -108,6 +211,7 @@ int AST::parse_token() {
       return -1;
       break;
   }
+  t_it++;
   return 0;
 }
  
@@ -119,7 +223,6 @@ int AST::parse_program() {
     }
     t_it++;
   }
-
   return 0;
 
 }
@@ -163,6 +266,7 @@ int AST::readSourceToBuffer(std::array<char, BUF_SIZE + 2>& buf) {
 }
 #endif
 
+
 tokenType AST::comp_keywords(std::string &key) {
   auto s = TKeywords.find(key);
   if(s != TKeywords.end()) {
@@ -171,7 +275,31 @@ tokenType AST::comp_keywords(std::string &key) {
     return IDENTIFIER;
   }
 }
+int AST::lex_buf_push(std::string &key, tokenType type, int num) {
 
+  Token t{};
+  if(key.size() > 0) {
+    t.m_type = comp_keywords(key);
+    t.m_stype = key;
+    t.line = lc;
+    toks.push_back(t);
+  }
+  key.clear();
+  /* We dont care about newlines, spaces, etc */
+  if(type == NA) {
+    return 0;
+  }
+  t.m_type = type;
+  t.m_stype.clear();
+  t.val = num;
+  for(auto &i: TOps) {
+    if(t.m_type == i.second) {
+      t.m_stype = i.first;
+    }
+  }
+  toks.push_back(t);
+  return 0;
+}
 int AST::lex_buf_push(std::string &key, tokenType type) {
 
   Token t{};
@@ -188,6 +316,8 @@ int AST::lex_buf_push(std::string &key, tokenType type) {
   }
   t.m_type = type;
   t.m_stype.clear();
+
+  // get the string for the given toke type
   for(auto &i: TOps) {
     if(t.m_type == i.second) {
       t.m_stype = i.first;
@@ -195,6 +325,16 @@ int AST::lex_buf_push(std::string &key, tokenType type) {
   }
   toks.push_back(t);
   return 0;
+}
+
+int AST::readInt() {
+  std::string intBuf{};
+  while(*fp >= '0' && *fp <= '9') {
+    intBuf += *fp;
+    fp++;
+  }
+  fp--;
+  return std::stoi(intBuf);
 }
 
 void AST::lex() {
@@ -292,6 +432,46 @@ void AST::lex() {
           lex_buf_push(tokBuf, NA);
           count = 0;
         }
+        break;
+      case '0':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
+        break;
+      case '1':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
+        break;
+      case '2':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
+        break;
+      case '3':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
+        break;
+      case '4':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
+        break;
+      case '5':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
+        break;
+      case '6':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
+        break;
+      case '7':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
+        break;
+      case '8':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
+        break;
+      case '9':
+        lex_buf_push(tokBuf, NUM_LITERAL, readInt());
+        count = 0;
         break;
       // DEFAULT WILL ACT AS KEYWORDS AND IDENTIFIERS
       default:
