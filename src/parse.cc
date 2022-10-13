@@ -71,7 +71,15 @@ int AST::parse_var_declr_statement(tokenType type, std::string id) {
   lodge::log.info("Found variable declaration {}", id);
   t_it++;
   std::vector<Token> l_vals{};
-  while(t_it->m_type != tokenType::SEMICOLON) { l_vals.push_back(*t_it); lodge::log.info("pushed {} to lvals", std::get<int>(t_it->val)); t_it++; }
+  while(t_it->m_type != tokenType::SEMICOLON) { 
+    l_vals.push_back(*t_it); 
+    if(t_it->m_type == NUM_LITERAL) {
+      lodge::log.info("pushed {} to lvals", std::get<int>(t_it->val)); 
+    } else if(t_it->m_type == IDENTIFIER) {
+      lodge::log.info("pushed {} to lvals", t_it->m_stype); 
+    }
+  t_it++; 
+  }
   lodge::log.info("filled lval vector");
   parse_expr(l_vals);
   return 0;
@@ -151,7 +159,14 @@ int AST::parse_return_statement() {
 
   std::vector<Token> l_vals{};
   t_it++;
-  while(t_it->m_type != tokenType::SEMICOLON) { l_vals.push_back(*t_it); lodge::log.info("pushed {} to lvals", std::get<int>(t_it->val)); t_it++; }
+  while(t_it->m_type != tokenType::SEMICOLON) { 
+  if(t_it->m_type == NUM_LITERAL) {
+      lodge::log.info("pushed {} to lvals", std::get<int>(t_it->val)); 
+    } else if(t_it->m_type == IDENTIFIER) {
+      lodge::log.info("pushed {} to lvals", t_it->m_stype); 
+    }
+  t_it++;
+  }
   lodge::log.info("filled lval vector");
   parse_expr(l_vals);
 
