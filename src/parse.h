@@ -23,10 +23,6 @@
 namespace prob {
 
 constexpr uint32_t BUF_SIZE = 4096;
-struct Node {
-  Node *left;
-  Node *right;
-};
 class AST {
 public:
   AST() = default;
@@ -71,6 +67,6 @@ private:
   std::vector<Token>::iterator t_it = toks.begin();
   std::size_t lc{0};
   Stack<Scope> s;
-  ast_node head;
+  ast_node *head = new ast_node;
 };
 } // namespace prob

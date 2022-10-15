@@ -1,5 +1,6 @@
 #include "parse.h"
 #include "src/token.h"
+#include <cstddef>
 #include <string>
 
 namespace prob {
@@ -39,7 +40,7 @@ int AST::parse_function_decl(tokenType ptype, std::string id) {
   //Add function declaration to tree as id and type   
   lodge::log.info("Found function {}", id);
 
-  add_node(head, FUNCTION_DECL, ptype, id);
+  head = add_node(head, FUNCTION_DECL, ptype, id);
   while(t_it->m_type != END_PAREN) { t_it++; }
 
   lodge::log.info("Found end parenthesis");
@@ -63,25 +64,72 @@ int AST::parse_function_decl(tokenType ptype, std::string id) {
 
 int AST::parse_expr(std::vector<Token> toks) {
 
-  return 0;
+  Stack<Token> ops{};
+  Stack<Token> opands{};
+  for(size_t i = 0; i < toks.size(); i++) {
+    switch(toks.at(i).m_type) {
+      case tokenType::IDENTIFIER:
+        lodge::log.info("Found an identifier: {}", toks.at(i).m_stype);
+        opands.push(toks.at(i));
+        break;
+      case tokenType::NUM_LITERAL:
+        lodge::log.info("found a literal: {}", std::get<int>(toks.at(i).val));
+        opands.push(toks.at(i));
+        break;
+      case tokenType::ADD:
+        //add to tree, go back and get prev, get next
+        lodge::log.info("Found an add");
+        ops.push(toks.at(i));
+        break;
+      default:
+        lodge::log.error("Invalid Token {}", toks.at(i).m_stype);
+    }
+  }
 
+  for(size_t i = 0; i < ops.size(); i++) {
+    lodge::log.info("There is: {}", ops.c[i].m_type);
+  }
+  for(size_t i = 0; i < opands.size(); i++) {
+    lodge::log.info("There is: {}", opands.c[i].m_stype);
+  }
+  // After collecting terms in respective stacks, Parse into expr tree
+  ast_node *e_head = new ast_node;
+  auto op = ops.pop();
+  if(op.has_value()) {
+    e_head = add_node(e_head, op.value());
+  }
+  auto opand = opands.pop();
+  if(opand.has_value()) {
+    e_head = add_node(e_head, opand.value());
+  }
+  opand = opands.pop();
+  if(opand.has_value()) {
+    e_head = add_node(e_head, opand.value());
+  }
+  head = e_head;
+  return 0;
 }
 
 int AST::parse_var_declr_statement(tokenType type, std::string id) {
   lodge::log.info("Found variable declaration {}", id);
   t_it++;
-  std::vector<Token> l_vals{};
+  std::vector<Token> vals{};
   while(t_it->m_type != tokenType::SEMICOLON) { 
-    l_vals.push_back(*t_it); 
+    vals.push_back(*t_it); 
     if(t_it->m_type == NUM_LITERAL) {
-      lodge::log.info("pushed {} to lvals", std::get<int>(t_it->val)); 
+      lodge::log.info("pushed {} to vals for expr()", std::get<int>(t_it->val)); 
+      vals.push_back(*t_it);
     } else if(t_it->m_type == IDENTIFIER) {
-      lodge::log.info("pushed {} to lvals", t_it->m_stype); 
+      lodge::log.info("pushed {} to vals for expr()", t_it->m_stype); 
+      vals.push_back(*t_it);
+    } else {
+      lodge::log.info("pushed {} to vals for expr()");
+      vals.push_back(*t_it);
     }
   t_it++; 
   }
   lodge::log.info("filled lval vector");
-  parse_expr(l_vals);
+  parse_expr(vals);
   return 0;
 }
 
@@ -157,18 +205,21 @@ int AST::parse_function_or_assignment() {
 
 int AST::parse_return_statement() {
 
-  std::vector<Token> l_vals{};
+  std::vector<Token> vals{};
   t_it++;
   while(t_it->m_type != tokenType::SEMICOLON) { 
-  if(t_it->m_type == NUM_LITERAL) {
-      lodge::log.info("pushed {} to lvals", std::get<int>(t_it->val)); 
-    } else if(t_it->m_type == IDENTIFIER) {
-      lodge::log.info("pushed {} to lvals", t_it->m_stype); 
-    }
-  t_it++;
+    if(t_it->m_type == NUM_LITERAL) {
+        lodge::log.info("pushed {} to vals for expr()", std::get<int>(t_it->val)); 
+      } else if(t_it->m_type == IDENTIFIER) {
+        lodge::log.info("pushed {} to vals for expr()", t_it->m_stype); 
+      } else {
+        lodge::log.info("pushed {} to vals for expr()", t_it->m_type);
+      }
+    vals.push_back(*t_it);
+    t_it++;
   }
   lodge::log.info("filled lval vector");
-  parse_expr(l_vals);
+  parse_expr(vals);
 
   return 0;
 }
@@ -234,12 +285,12 @@ int AST::parse_program() {
   t_it = toks.begin();
   while(true) {
     if(parse_token() == -1) {
+      print_tree(head);
       return -1;
     }
     t_it++;
   }
   return 0;
-
 }
 
 #ifdef __linux__

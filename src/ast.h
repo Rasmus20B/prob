@@ -8,13 +8,23 @@
 #include "token.h"
 
 namespace prob {
+
+struct Zone {
+
+};
+
 struct ast_node {
-  std::vector<ast_node> children;
+  ast_node() {
+    children.reserve(3);
+  }
+  std::vector<ast_node*> children{};
   uint16_t id;
   tokenType type{};
   Token t;
 
 };
-extern void add_node(ast_node head, tokenType type, tokenType ptype, std::string identifier);
-void delete_node(Token t, ast_node head);
+extern ast_node *add_node(ast_node *head, tokenType type, tokenType ptype, std::string identifier);
+extern ast_node *add_node(ast_node *head, Token t);
+extern void delete_node(ast_node head);
+extern void print_tree(ast_node *head);
 }
