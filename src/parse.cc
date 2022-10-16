@@ -141,45 +141,7 @@ ast_node *AST::parse_expr() {
     return nullptr;
   }
   return parse_bin_op(0, lhs);
-  }
-//   for(size_t i = 0; i < toks.size(); i++) {
-//     switch(toks.at(i).m_type) {
-//       case tokenType::IDENTIFIER:
-//         lodge::log.info("Found an identifier: {}", toks.at(i).m_stype);
-//         n = parse_num_literal();
-//         opands.push(toks.at(i));
-//         break;
-//       case tokenType::NUM_LITERAL:
-//         lodge::log.info("found a literal: {}", std::get<int>(toks.at(i).val));
-//         opands.push(toks.at(i));
-//         break;
-//       case tokenType::ADD:
-//         //add to tree, go back and get prev, get next
-//         lodge::log.info("Found an add");
-//         ops.push(toks.at(i));
-//         break;
-//       default:
-//         lodge::log.error("Invalid Token {}", toks.at(i).m_stype);
-//     }
-//   }
-//
-//   // After collecting terms in respective stacks, Parse into expr tree
-//   ast_node *e_head = new ast_node;
-//   auto op = ops.pop();
-//   if(op.has_value()) {
-//     e_head = add_node(e_head, op.value());
-//   }
-//   auto opand = opands.pop();
-//   if(opand.has_value()) {
-//     e_head = add_node(e_head, opand.value());
-//   }
-//   opand = opands.pop();
-//   if(opand.has_value()) {
-//     e_head = add_node(e_head, opand.value());
-//   }
-//   head = e_head;
-//   return 0;
-// }
+}
 
 int AST::parse_var_declr_statement(tokenType type, std::string id) {
   t_it++;
