@@ -40,7 +40,8 @@ int AST::parse_function_decl(tokenType ptype, std::string id) {
   //Add function declaration to tree as id and type   
   lodge::log.info("Found function {}", id);
 
-  head = add_node(head, FUNCTION_DECL, ptype, id);
+  head->children[func_count] = add_node(head, FUNCTION_DECL, ptype, id);
+  func_count++;
   while(t_it->m_type != END_PAREN) { t_it++; }
 
   lodge::log.info("Found end parenthesis");
@@ -62,74 +63,132 @@ int AST::parse_function_decl(tokenType ptype, std::string id) {
   return 0;
 }
 
-int AST::parse_expr(std::vector<Token> toks) {
-
-  Stack<Token> ops{};
-  Stack<Token> opands{};
-  for(size_t i = 0; i < toks.size(); i++) {
-    switch(toks.at(i).m_type) {
-      case tokenType::IDENTIFIER:
-        lodge::log.info("Found an identifier: {}", toks.at(i).m_stype);
-        opands.push(toks.at(i));
-        break;
-      case tokenType::NUM_LITERAL:
-        lodge::log.info("found a literal: {}", std::get<int>(toks.at(i).val));
-        opands.push(toks.at(i));
-        break;
-      case tokenType::ADD:
-        //add to tree, go back and get prev, get next
-        lodge::log.info("Found an add");
-        ops.push(toks.at(i));
-        break;
-      default:
-        lodge::log.error("Invalid Token {}", toks.at(i).m_stype);
-    }
+ast_node * AST::parse_primary_expr() {
+  switch(t_it->m_type) {
+    case tokenType::IDENTIFIER:
+      return parse_identifier_expr();
+    case tokenType::NUM_LITERAL:
+      return parse_num_literal_expr();
+    case tokenType::OP_CURL:
+      return parse_paren_expr();
+    default:
+      lodge::log.error("Invalid token for expression");
+      return nullptr;
   }
-
-  for(size_t i = 0; i < ops.size(); i++) {
-    lodge::log.info("There is: {}", ops.c[i].m_type);
-  }
-  for(size_t i = 0; i < opands.size(); i++) {
-    lodge::log.info("There is: {}", opands.c[i].m_stype);
-  }
-  // After collecting terms in respective stacks, Parse into expr tree
-  ast_node *e_head = new ast_node;
-  auto op = ops.pop();
-  if(op.has_value()) {
-    e_head = add_node(e_head, op.value());
-  }
-  auto opand = opands.pop();
-  if(opand.has_value()) {
-    e_head = add_node(e_head, opand.value());
-  }
-  opand = opands.pop();
-  if(opand.has_value()) {
-    e_head = add_node(e_head, opand.value());
-  }
-  head = e_head;
-  return 0;
 }
 
+ast_node * AST::parse_bin_op(int prec, ast_node* lhs) {
+
+  Stack<Token> ops;
+  while(true) {
+    auto p = precs.find(t_it->m_type);
+    if(p->second < prec) {
+      return lhs;
+    }
+
+    t_it++;
+    ast_node *rhs = new ast_node;
+    rhs = parse_primary_expr();
+    if(!rhs) {
+      return nullptr;
+    }
+
+    auto n_p = precs.find(t_it->m_type);
+    if(p->second < n_p->second) {
+      rhs = parse_bin_op(p->second+1, rhs);
+      if(!rhs){
+        return nullptr;
+      }
+    }
+    lhs->children.push_back(lhs);
+    lhs->children.push_back(rhs);
+    lhs->type = n_p->first;
+  }
+  return lhs;
+  
+}
+
+ast_node * AST::parse_paren_expr() {
+  ast_node *num = new ast_node;
+  num->type = NUM_LITERAL;
+  t_it++;
+  return num;
+}
+ast_node * AST::parse_identifier_expr() {
+  ast_node *num = new ast_node;
+  num->type = IDENTIFIER;
+  t_it++;
+
+  switch(t_it->m_type) {
+    case tokenType::OP_PAREN:
+      //function call, read all the arguments (push to stack) until you reach end paren
+      break;
+    default:
+      break;
+  }
+  return num;
+}
+
+ast_node * AST::parse_num_literal_expr() {
+  ast_node *num = new ast_node;
+  num->type = NUM_LITERAL;
+  return num;
+}
+
+ast_node *AST::parse_expr() {
+  auto lhs = parse_primary_expr();
+  if(lhs == nullptr) {
+    return nullptr;
+  }
+  return parse_bin_op(0, lhs);
+  }
+//   for(size_t i = 0; i < toks.size(); i++) {
+//     switch(toks.at(i).m_type) {
+//       case tokenType::IDENTIFIER:
+//         lodge::log.info("Found an identifier: {}", toks.at(i).m_stype);
+//         n = parse_num_literal();
+//         opands.push(toks.at(i));
+//         break;
+//       case tokenType::NUM_LITERAL:
+//         lodge::log.info("found a literal: {}", std::get<int>(toks.at(i).val));
+//         opands.push(toks.at(i));
+//         break;
+//       case tokenType::ADD:
+//         //add to tree, go back and get prev, get next
+//         lodge::log.info("Found an add");
+//         ops.push(toks.at(i));
+//         break;
+//       default:
+//         lodge::log.error("Invalid Token {}", toks.at(i).m_stype);
+//     }
+//   }
+//
+//   // After collecting terms in respective stacks, Parse into expr tree
+//   ast_node *e_head = new ast_node;
+//   auto op = ops.pop();
+//   if(op.has_value()) {
+//     e_head = add_node(e_head, op.value());
+//   }
+//   auto opand = opands.pop();
+//   if(opand.has_value()) {
+//     e_head = add_node(e_head, opand.value());
+//   }
+//   opand = opands.pop();
+//   if(opand.has_value()) {
+//     e_head = add_node(e_head, opand.value());
+//   }
+//   head = e_head;
+//   return 0;
+// }
+
 int AST::parse_var_declr_statement(tokenType type, std::string id) {
-  lodge::log.info("Found variable declaration {}", id);
   t_it++;
   std::vector<Token> vals{};
-  while(t_it->m_type != tokenType::SEMICOLON) { 
-    vals.push_back(*t_it); 
-    if(t_it->m_type == NUM_LITERAL) {
-      lodge::log.info("pushed {} to vals for expr()", std::get<int>(t_it->val)); 
-      vals.push_back(*t_it);
-    } else if(t_it->m_type == IDENTIFIER) {
-      lodge::log.info("pushed {} to vals for expr()", t_it->m_stype); 
-      vals.push_back(*t_it);
-    } else {
-      lodge::log.info("pushed {} to vals for expr()");
-      vals.push_back(*t_it);
-    }
-  t_it++; 
-  }
-  lodge::log.info("filled lval vector");
-  parse_expr(vals);
+  ast_node *e = parse_expr();
+  std::cout << e->type << std::endl;
+  // std::cout << e->children[0]->type << std::endl;
+  // std::cout << e->children[1]->type << std::endl;
+
   return 0;
 }
 
@@ -207,20 +266,7 @@ int AST::parse_return_statement() {
 
   std::vector<Token> vals{};
   t_it++;
-  while(t_it->m_type != tokenType::SEMICOLON) { 
-    if(t_it->m_type == NUM_LITERAL) {
-        lodge::log.info("pushed {} to vals for expr()", std::get<int>(t_it->val)); 
-      } else if(t_it->m_type == IDENTIFIER) {
-        lodge::log.info("pushed {} to vals for expr()", t_it->m_stype); 
-      } else {
-        lodge::log.info("pushed {} to vals for expr()", t_it->m_type);
-      }
-    vals.push_back(*t_it);
-    t_it++;
-  }
-  lodge::log.info("filled lval vector");
-  parse_expr(vals);
-
+  parse_expr();
   return 0;
 }
 
@@ -260,15 +306,12 @@ int AST::parse_token() {
   /* When an { is found, this is the start of a compoudnd statement */
   switch(t_it->m_type) {
     case tokenType::IDENTIFIER:
-      lodge::log.info("FOUND AN IDENTIFIER");
       parse_identifier();
       break;
     case tokenType::INT:
-      lodge::log.info("FOUND AN INT");
       parse_int();
       break;
     case tokenType::NUM_LITERAL:
-      lodge::log.info("Found a constant Int");
       break;
     case tokenType::OP_CURL:
       //Begin compound statement
@@ -285,7 +328,8 @@ int AST::parse_program() {
   t_it = toks.begin();
   while(true) {
     if(parse_token() == -1) {
-      print_tree(head);
+      /* PROBLEM SEG FAULT */
+      // print_tree(head);
       return -1;
     }
     t_it++;

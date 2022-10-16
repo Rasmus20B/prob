@@ -8,14 +8,14 @@
 
 int main(int argc, char **argv) {
   lodge::log.start();
-  prob::AST t;
+  prob::AST t{};
 
   t.set_file(argv[1]);
+  lodge::log.stop();
   t.lex();
   // t.print_tokens();
   t.parse_program();
 
-  lodge::log.stop();
 
   return 0;
 }
