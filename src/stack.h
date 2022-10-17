@@ -11,7 +11,7 @@ class Stack {
   public:
   [[nodiscard]]bool empty() { return (sp == c.begin());}
   [[nodiscard]]bool full() { return (sp == c.end());}
-  size_t size() {
+  [[nodiscard]]size_t size() {
     return m_size;
   }
   void push(T val) {

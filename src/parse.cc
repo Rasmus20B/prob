@@ -100,12 +100,10 @@ ast_node * AST::parse_bin_op(int prec, ast_node* lhs) {
         return nullptr;
       }
     }
-    lhs->children.push_back(lhs);
+    lhs->children.push_back(std::move(lhs));
     lhs->children.push_back(rhs);
     lhs->type = n_p->first;
   }
-  return lhs;
-  
 }
 
 ast_node * AST::parse_paren_expr() {
@@ -119,13 +117,6 @@ ast_node * AST::parse_identifier_expr() {
   num->type = IDENTIFIER;
   t_it++;
 
-  switch(t_it->m_type) {
-    case tokenType::OP_PAREN:
-      //function call, read all the arguments (push to stack) until you reach end paren
-      break;
-    default:
-      break;
-  }
   return num;
 }
 
@@ -148,9 +139,7 @@ int AST::parse_var_declr_statement(tokenType type, std::string id) {
   std::vector<Token> vals{};
   ast_node *e = parse_expr();
   std::cout << e->type << std::endl;
-  // std::cout << e->children[0]->type << std::endl;
-  // std::cout << e->children[1]->type << std::endl;
-
+  delete e;
   return 0;
 }
 
@@ -169,6 +158,7 @@ int AST::parse_identifier() {
         parse_function_decl((t_it - 2)->m_type, (t_it - 1)->m_stype);
       } else {
         // if its not, it's a function call
+        while(t_it->m_type != END_PAREN) {t_it++;}
       }
       return 0;
     case tokenType::EQ:
@@ -228,7 +218,13 @@ int AST::parse_return_statement() {
 
   std::vector<Token> vals{};
   t_it++;
-  parse_expr();
+  auto e = parse_expr();
+  std::cout << "root: " << e->type << std::endl;
+  if(e->type == tokenType::SEMICOLON) {
+    std::cout << e->children[0]->type << std::endl;
+    std::cout << e->children[1]->type << std::endl;
+  }
+  delete e;
   return 0;
 }
 
