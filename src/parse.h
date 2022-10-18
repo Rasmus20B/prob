@@ -47,12 +47,18 @@ private:
   int parse_var_declr_statement(tokenType type, std::string id);
   int parse_var_assignment_statement();
   int parse_function_or_assignment();
-  ast_node *parse_expr();
-  ast_node *parse_bin_op(int prec, ast_node* lhs);
-  ast_node *parse_identifier_expr();
-  ast_node *parse_num_literal_expr();
-  ast_node *parse_primary_expr();
-  ast_node *parse_paren_expr();
+  std::unique_ptr<NodeBase> parse_expr_u();
+  std::unique_ptr<NodeBase> parse_binop_u(int prec, std::unique_ptr<NodeBase> lhs);
+  std::unique_ptr<NodeBase> parse_identifier_u();
+  std::unique_ptr<NodeBase> parse_num_literal_u();
+  std::unique_ptr<NodeBase> parse_primary_expr_u();
+  std::unique_ptr<NodeBase> parse_paren_expr_u();
+  // ast_node *parse_expr();
+  // ast_node *parse_bin_op(int prec, ast_node* lhs);
+  // ast_node *parse_identifier_expr();
+  // ast_node *parse_num_literal_expr();
+  // ast_node *parse_primary_expr();
+  // ast_node *parse_paren_expr();
   int parse_identifier();
   int parse_return_statement();
   int parse_number();
@@ -73,7 +79,7 @@ private:
   std::size_t lc{0};
   Stack<Scope> s;
   uint16_t func_count = 0;
-  ast_node *head = new ast_node;
+  // ast_node *head = new ast_node;
   std::unordered_map<tokenType, int> precs = { 
     {tokenType::IDENTIFIER, -1},
     {tokenType::NUM_LITERAL, -1},

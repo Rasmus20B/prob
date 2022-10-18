@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <stdint.h>
 #include <vector>
 
@@ -9,21 +10,30 @@
 
 namespace prob {
 
-struct Zone {
-
-};
-
-struct ast_node {
-  ast_node() {}
-  std::vector<ast_node*> children{};
-  uint16_t id;
+struct NodeBase {
   tokenType type{};
-  Token t;
-
+  virtual ~NodeBase() = default;
 };
-extern ast_node *add_node(ast_node *head, tokenType type, tokenType ptype, std::string identifier);
-extern ast_node *add_node(ast_node *head, Token t);
-extern ast_node *merge_nodes(ast_node *a, ast_node *b);
-extern void delete_node(ast_node head);
-extern void print_tree(ast_node *head);
+
+struct NodeUnary : public NodeBase {
+
+  NodeUnary() = default;
+  NodeUnary(tokenType t, std::unique_ptr<NodeBase> p) : type(t), c1(std::move(p)) {}
+  tokenType type{};
+  std::unique_ptr<NodeBase> c1;
+};
+
+struct NodeBinary : public NodeBase  {
+
+  NodeBinary() = default;
+  NodeBinary(tokenType t, std::unique_ptr<NodeBase> x, std::unique_ptr<NodeBase> y) : type(t), c1(std::move(x)), c2(std::move(y)) {}
+
+  tokenType type{};
+  std::unique_ptr<NodeBase> c1{}, c2{};
+};
+
+struct NodeTernary : public NodeBase  {
+  tokenType type{};
+  std::unique_ptr<NodeBinary> c1{}, c2{}, c3{};
+};
 }

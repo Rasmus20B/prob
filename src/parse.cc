@@ -1,6 +1,8 @@
 #include "parse.h"
+#include "src/ast.h"
 #include "src/token.h"
 #include <cstddef>
+#include <memory>
 #include <string>
 
 namespace prob {
@@ -18,6 +20,72 @@ void AST::print_tokens() {
     } else {
       lodge::log.info("{}, {}", i.m_stype, i.m_type);
     }
+  }
+}
+
+std::unique_ptr<NodeBase> AST::parse_expr_u() {
+  auto lhs = parse_primary_expr_u();
+  if(lhs == nullptr) {
+    return nullptr;
+  }
+  return parse_binop_u(0, std::move(lhs));
+
+}
+
+std::unique_ptr<NodeBase> AST::parse_binop_u(int prec, std::unique_ptr<NodeBase> lhs) {
+  while(true) {
+    auto p = precs.find(t_it->m_type);
+    if(p->second < prec) {
+      return lhs;
+    }
+
+    t_it++;
+    auto rhs = parse_primary_expr_u();
+    if(!rhs) {
+      return nullptr;
+    }
+
+    auto n_p = precs.find((t_it)->m_type);
+    if(p->second < n_p->second) {
+      rhs = parse_binop_u(p->second+1, std::move(rhs));
+      if(!rhs){
+        return nullptr;
+      }
+    }
+    lhs = std::make_unique<NodeBinary>(p->first, std::move(lhs), std::move(rhs));
+  }
+}
+
+std::unique_ptr<NodeBase> AST::parse_identifier_u() {
+  auto num = std::make_unique<NodeUnary>(tokenType::IDENTIFIER, nullptr);
+  num->type = tokenType::IDENTIFIER;
+  t_it++;
+  return num;
+}
+
+std::unique_ptr<NodeBase> AST::parse_num_literal_u() {
+  auto num = std::make_unique<NodeUnary>(tokenType::NUM_LITERAL, nullptr);
+  num->type = tokenType::NUM_LITERAL;
+  t_it++;
+  return num;
+}
+std::unique_ptr<NodeBase> AST::parse_paren_expr_u() {
+  std::unique_ptr<NodeBinary> num(new NodeBinary);
+  num->type = IDENTIFIER;
+  t_it++;
+  return num;
+}
+std::unique_ptr<NodeBase> AST::parse_primary_expr_u() {
+switch(t_it->m_type) {
+    case tokenType::IDENTIFIER:
+      return parse_identifier_u();
+    case tokenType::NUM_LITERAL:
+      return parse_num_literal_u();
+    case tokenType::OP_CURL:
+      return parse_paren_expr_u();
+    default:
+      lodge::log.error("Invalid token for expression");
+      return nullptr;
   }
 }
 
@@ -40,7 +108,6 @@ int AST::parse_function_decl(tokenType ptype, std::string id) {
   //Add function declaration to tree as id and type   
   lodge::log.info("Found function {}", id);
 
-  head->children[func_count] = add_node(head, FUNCTION_DECL, ptype, id);
   func_count++;
   while(t_it->m_type != END_PAREN) { t_it++; }
 
@@ -63,83 +130,13 @@ int AST::parse_function_decl(tokenType ptype, std::string id) {
   return 0;
 }
 
-ast_node * AST::parse_primary_expr() {
-  switch(t_it->m_type) {
-    case tokenType::IDENTIFIER:
-      return parse_identifier_expr();
-    case tokenType::NUM_LITERAL:
-      return parse_num_literal_expr();
-    case tokenType::OP_CURL:
-      return parse_paren_expr();
-    default:
-      lodge::log.error("Invalid token for expression");
-      return nullptr;
-  }
-}
-
-ast_node * AST::parse_bin_op(int prec, ast_node* lhs) {
-
-  Stack<Token> ops;
-  while(true) {
-    auto p = precs.find(t_it->m_type);
-    if(p->second < prec) {
-      return lhs;
-    }
-
-    t_it++;
-    ast_node *rhs = new ast_node;
-    rhs = parse_primary_expr();
-    if(!rhs) {
-      return nullptr;
-    }
-
-    auto n_p = precs.find(t_it->m_type);
-    if(p->second < n_p->second) {
-      rhs = parse_bin_op(p->second+1, rhs);
-      if(!rhs){
-        return nullptr;
-      }
-    }
-    lhs->children.push_back(std::move(lhs));
-    lhs->children.push_back(rhs);
-    lhs->type = n_p->first;
-  }
-}
-
-ast_node * AST::parse_paren_expr() {
-  ast_node *num = new ast_node;
-  num->type = NUM_LITERAL;
-  t_it++;
-  return num;
-}
-ast_node * AST::parse_identifier_expr() {
-  ast_node *num = new ast_node;
-  num->type = IDENTIFIER;
-  t_it++;
-
-  return num;
-}
-
-ast_node * AST::parse_num_literal_expr() {
-  ast_node *num = new ast_node;
-  num->type = NUM_LITERAL;
-  return num;
-}
-
-ast_node *AST::parse_expr() {
-  auto lhs = parse_primary_expr();
-  if(lhs == nullptr) {
-    return nullptr;
-  }
-  return parse_bin_op(0, lhs);
-}
-
 int AST::parse_var_declr_statement(tokenType type, std::string id) {
   t_it++;
   std::vector<Token> vals{};
-  ast_node *e = parse_expr();
-  std::cout << e->type << std::endl;
-  delete e;
+  auto e = std::make_unique<NodeUnary>(tokenType::DECL_STAT, parse_expr_u());
+  std::cout << "root: " << e->type << std::endl;
+  auto v = static_cast<NodeUnary*>(e->c1.get());
+  std::cout << "operation/value type: " << v->type << std::endl;
   return 0;
 }
 
@@ -218,13 +215,21 @@ int AST::parse_return_statement() {
 
   std::vector<Token> vals{};
   t_it++;
-  auto e = parse_expr();
-  std::cout << "root: " << e->type << std::endl;
-  if(e->type == tokenType::SEMICOLON) {
-    std::cout << e->children[0]->type << std::endl;
-    std::cout << e->children[1]->type << std::endl;
+  auto e = std::make_unique<NodeUnary>(tokenType::RETURN, parse_expr_u());
+  auto op = static_cast<NodeBinary*>(e->c1.get());
+  auto lhs = static_cast<NodeUnary*>(op->c1.get());
+  auto rhs = static_cast<NodeUnary*>(op->c2.get());
+  std::cout << "root expr: " << e->type << std::endl;
+  std::cout << "Operation/Value type: " << op->type << std::endl;
+  if(op->type == tokenType::NUM_LITERAL){ 
+    return 0;
   }
-  delete e;
+  if(lhs->type) {
+    std::cout << "lhs: " << lhs->type << std::endl;
+  }
+  if(rhs->type) {
+    std::cout << "rhs: " << lhs->type << std::endl;
+  }
   return 0;
 }
 
