@@ -32,6 +32,7 @@ public:
   void lex();
   void print_tokens();
   int parse_program();
+  void print_tree();
 
 private:
   tokenType comp_keywords(std::string &key);
@@ -39,14 +40,14 @@ private:
   int lex_buf_push(std::string &key, tokenType type, int num);
   int lex_buf_push(std::string &key, tokenType type, std::string& s_literal);
   int readInt();
-  int parse_token();
-  int parse_function_decl(tokenType type, std::string id);
-  int parse_statement();
-  int parse_compound_statement();
+  std::unique_ptr<NodeBase> parse_token();
+  std::unique_ptr<NodeBase> parse_function_decl(tokenType type, std::string id);
+  std::unique_ptr<NodeBase> parse_statement();
+  std::unique_ptr<NodeBase> parse_compound_statement();
   int parse_if_statement();
-  int parse_var_declr_statement(tokenType type, std::string id);
+  std::unique_ptr<NodeBase> parse_var_declr_statement(tokenType type, std::string id);
   int parse_var_assignment_statement();
-  int parse_function_or_assignment();
+  std::unique_ptr<NodeBase> parse_function_or_assignment();
   std::unique_ptr<NodeBase> parse_expr_u();
   std::unique_ptr<NodeBase> parse_binop_u(int prec, std::unique_ptr<NodeBase> lhs);
   std::unique_ptr<NodeBase> parse_identifier_u();
@@ -59,12 +60,11 @@ private:
   // ast_node *parse_num_literal_expr();
   // ast_node *parse_primary_expr();
   // ast_node *parse_paren_expr();
-  int parse_identifier();
-  int parse_return_statement();
+  std::unique_ptr<NodeBase> parse_identifier();
+  std::unique_ptr<NodeBase> parse_return_statement();
   int parse_number();
-  int parse_punctuation();
   int parse_keyword();
-  int parse_int();
+  std::unique_ptr<NodeBase> parse_int();
 
 private:
   char next{};
@@ -79,7 +79,7 @@ private:
   std::size_t lc{0};
   Stack<Scope> s;
   uint16_t func_count = 0;
-  // ast_node *head = new ast_node;
+  std::unique_ptr<NodeNary> head = std::make_unique<NodeNary>();
   std::unordered_map<tokenType, int> precs = { 
     {tokenType::IDENTIFIER, -1},
     {tokenType::NUM_LITERAL, -1},
