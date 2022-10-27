@@ -10,6 +10,37 @@
 
 namespace prob {
 
+  const std::unordered_map<tokenType, std::string> ops = {
+    { tokenType::ADD,  "+"},
+    { tokenType::EQ,  "="},
+    { CHAR,  "char"},
+    { BREAK,  "continue"},
+    { BREAK,  "default"},
+    { BREAK,  "do"},
+    { BREAK,  "double"},
+    { BREAK,  "else"},
+    { BREAK,  "enum"},
+    { BREAK,  "extern"},
+    { BREAK,  "float"},
+    { BREAK,  "goto"},
+    { BREAK,  "if"},
+    { BREAK,  "int"},
+    { BREAK,  "long"},
+    { BREAK,  "register"},
+    { BREAK,  "return"},
+    { BREAK,  "short"},
+    { BREAK,  "signed"},
+    { BREAK,  "sizeof"},
+    { BREAK,  "static"},
+    { BREAK,  "struct"},
+    { BREAK,  "switch"},
+    { BREAK,  "typedef"},
+    { BREAK,  "union"},
+    { BREAK,  "unsigned"},
+    { BREAK,  "void"},
+    { BREAK,  "volatile"},
+    { BREAK,  "while"},
+   };
 struct NodeBase {
   tokenType type{};
   virtual ~NodeBase() = default;
@@ -24,18 +55,24 @@ struct NodeUnary : public NodeBase {
   tokenType type{};
   std::unique_ptr<NodeBase> c1;
   std::variant<int, float, std::string> val{};
-  std::string valType;
+  std::string valType{};
 };
 
 struct NodeBinary : public NodeBase  {
 
   NodeBinary() = default;
-  NodeBinary(tokenType t, std::unique_ptr<NodeBase> x, std::unique_ptr<NodeBase> y) : type(t), c1(std::move(x)), c2(std::move(y)) {}
+  NodeBinary(tokenType t, std::unique_ptr<NodeBase> x, std::unique_ptr<NodeBase> y) : type(t), c1(std::move(x)), c2(std::move(y)) { 
+    auto res = ops.find(t);
+    if(res != ops.end()) {
+      this->valType = ops.find(t)->second;
+    }
+  }
 
   tokenType type{};
   std::unique_ptr<NodeBase> c1{}, c2{};
   std::variant<int, float, std::string> val{};
-  std::string valType;
+  std::string valType{};
+  std::string name{};
 
 };
 

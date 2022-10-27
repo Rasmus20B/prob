@@ -9,16 +9,61 @@ namespace prob {
 
 void AST::set_file(std::string_view path) { m_path = path;}
 
+void AST::print_expression(NodeBinary* e) {
+  if(e) {
+       print_expression(static_cast<NodeBinary*>(e->c1.get()));
+       switch(e->type) {
+         case tokenType::NUM_LITERAL:
+           lodge::log.info("Literal: {}", std::get<int>(e->val));
+           break;
+         case tokenType::IDENTIFIER:
+           lodge::log.info("Identifier: {}", e->name);
+           break;
+         default:
+           lodge::log.info("BinaryExpr: {}", e->valType);
+           break;
+       }
+       print_expression(static_cast<NodeBinary*>(e->c2.get()));
+  }
+
+}
+
+void AST::print_compound(NodeNary* e) {
+
+  lodge::log.info("Compound Stat:");
+  for(auto &i : e->ci) {
+    if(i.get() == nullptr) {
+      lodge::log.info("End of Compound Stat");
+      break;
+    } else if(static_cast<NodeUnary*>(i.get())->type == tokenType::DECL_STAT) {
+      lodge::log.info("Variable Decl: {} {}", static_cast<NodeUnary*>(i.get())->valType, std::get<std::string>(static_cast<NodeUnary*>(i.get())->val));
+      print_expression(static_cast<NodeBinary*>(static_cast<NodeUnary*>(i.get())->c1.get()));
+    } else if(static_cast<NodeUnary*>(i.get())->type == tokenType::RETURN) {
+      lodge::log.info("Return: ");
+      print_expression(static_cast<NodeBinary*>(static_cast<NodeUnary*>(i.get())->c1.get()));
+    } else {
+      lodge::log.info("{}", static_cast<NodeUnary*>(i.get())->type);
+    }
+  }
+}
+
 void AST::print_tree() {
 
-  auto it = head->ci.begin();
-  
-  std::cout << "found function: " << std::get<std::string>(static_cast<NodeUnary*>(it->get())->val) << std::endl;
-  it++;
-  std::cout << "found function: " << (static_cast<NodeUnary*>(it->get())->type) << std::endl;
-  while(*it) {
-    std::cout << "found function: " << std::get<std::string>(static_cast<NodeUnary*>(it->get())->val) << std::endl;
-    it++;
+  for(auto &i: head->ci) {
+    auto e = static_cast<NodeUnary*>(i.get());
+    switch(e->type) {
+      case tokenType::FUNCTION_DECL:
+        if(!e->c1) {
+          lodge::log.info( "function declaration: {}, {}", e->valType, std::get<std::string>(e->val));
+        } else if(static_cast<NodeNary*>(e->c1.get())->type == tokenType::COMPOUND_STAT) {
+          lodge::log.info( "function definition: {}, {}", e->valType, std::get<std::string>(e->val));
+          print_compound(static_cast<NodeNary*>(e->c1.get()));
+        }
+        break;
+      default:
+        lodge::log.info("Unknown");
+        break;
+    }
   }
 
 }
@@ -71,15 +116,18 @@ std::unique_ptr<NodeBase> AST::parse_binop_u(int prec, std::unique_ptr<NodeBase>
 }
 
 std::unique_ptr<NodeBase> AST::parse_identifier_u() {
-  auto num = std::make_unique<NodeUnary>(tokenType::IDENTIFIER, nullptr);
+  auto num = std::make_unique<NodeBinary>(tokenType::IDENTIFIER, nullptr, nullptr);
   num->type = tokenType::IDENTIFIER;
+  num->name = t_it->name;
   t_it++;
   return num;
 }
 
 std::unique_ptr<NodeBase> AST::parse_num_literal_u() {
-  auto num = std::make_unique<NodeUnary>(tokenType::NUM_LITERAL, nullptr);
+  auto num = std::make_unique<NodeBinary>(tokenType::NUM_LITERAL, nullptr, nullptr);
   num->type = tokenType::NUM_LITERAL;
+  num->val = std::get<int>(t_it->val);
+  num->valType = std::to_string(std::get<int>(num->val));
   t_it++;
   return num;
 }
@@ -107,7 +155,6 @@ std::unique_ptr<NodeBase> AST::parse_int() {
   t_it++;
   switch(t_it->m_type) {
     case tokenType::IDENTIFIER:
-      lodge::log.info("FOUND AN IDENTIFIER");
       return parse_identifier();
     default:
       lodge::log.error("Expected identifier after typename!");
@@ -119,17 +166,14 @@ std::unique_ptr<NodeBase> AST::parse_int() {
 std::unique_ptr<NodeBase> AST::parse_function_decl(tokenType ptype, std::string id) {
     
   //Add function declaration to tree as id and type   
-  lodge::log.info("Found function {}", id);
 
   func_count++;
   while(t_it->m_type != END_PAREN) { t_it++; }
 
-  lodge::log.info("Found end parenthesis");
-
   t_it++;
   switch(t_it->m_type) {
     case tokenType::OP_CURL:
-      return std::make_unique<NodeUnary>(tokenType::FUNCTION_DECL, parse_compound_statement());
+      return std::make_unique<NodeUnary>(tokenType::FUNCTION_DECL, parse_compound_statement(), id, (t_it - 4)->m_stype);
     case tokenType::SEMICOLON:
       return std::make_unique<NodeUnary>(tokenType::FUNCTION_DECL, nullptr, id, (t_it - 4)->m_stype);
     default:
@@ -138,22 +182,20 @@ std::unique_ptr<NodeBase> AST::parse_function_decl(tokenType ptype, std::string 
   }
 }
 
-std::unique_ptr<NodeBase> AST::parse_var_declr_statement(tokenType type, std::string id) {
+std::unique_ptr<NodeBase> AST::parse_var_declr_statement(std::string type, std::string id) {
   t_it++;
-  std::vector<Token> vals{};
-  return std::make_unique<NodeUnary>(tokenType::DECL_STAT, parse_expr_u());
+  return std::make_unique<NodeUnary>(tokenType::DECL_STAT, parse_expr_u(), id, type);
 }
 
 
 std::unique_ptr<NodeBase> AST::parse_identifier() {
   
   t_it++;
+  std::unique_ptr<NodeBase> e{};
   switch(t_it->m_type) {
     case tokenType::SEMICOLON:
-      lodge::log.info("Found a semicolon");
       return nullptr;
     case tokenType::OP_PAREN:
-      lodge::log.info("Found opening paren");
       // if there is a type written before id, it's a declaration
       if((t_it - 2)->m_type == INT) {
         return parse_function_decl((t_it - 2)->m_type, (t_it - 1)->m_stype);
@@ -163,8 +205,7 @@ std::unique_ptr<NodeBase> AST::parse_identifier() {
       }
       return nullptr;
     case tokenType::EQ:
-      lodge::log.info("Found an assignment operator(=)");
-      return parse_var_declr_statement((t_it - 2)->m_type, (t_it - 1)->m_stype);
+      return parse_var_declr_statement((t_it - 2)->m_stype, (t_it - 1)->m_stype);
     default:
       return nullptr;
   }
@@ -175,14 +216,9 @@ std::unique_ptr<NodeBase> AST::parse_identifier() {
 std::unique_ptr<NodeBase> AST::parse_compound_statement() { 
   auto e = std::make_unique<NodeNary>();
   e->type = tokenType::COMPOUND_STAT;
-  std::cout << "compound statement started " << std::endl;
-  auto count = 1;
   while(t_it->m_type != END_CURL) { 
     e->ci.push_back(parse_statement());
-    std::cout << "found " << count << "statements: " << t_it->m_type << std::endl;
-    count++;
   }
-  std::cout << "compound statement finished " << std::endl;
   return e; 
 }
 
@@ -194,12 +230,10 @@ std::unique_ptr<NodeBase> AST::parse_function_or_assignment() {
   t_it++;
   switch(t_it->m_type) {
     case tokenType::OP_PAREN:
-      lodge::log.info("Found function call");
       //its a function call
       return nullptr;
     case tokenType::EQ:
-      std::cout << "found a var assignment" << std::endl;
-      return parse_var_declr_statement((t_it - 2)->m_type, (t_it - 1)->m_stype);
+      return parse_var_declr_statement((t_it - 2)->m_stype, (t_it - 1)->m_stype);
     default:
       lodge::log.error("Expected paren or equals");
       return nullptr;
@@ -229,11 +263,14 @@ std::unique_ptr<NodeBase> AST::parse_statement() {
     case tokenType::IDENTIFIER:
       // Check if it's a function or a variable assignment via '('
       return parse_function_or_assignment();
+    case tokenType::INT:
+      t_it++;
+      if(t_it->m_type == tokenType::IDENTIFIER) {
+        return parse_function_or_assignment();
+      }
     case tokenType::NUM_LITERAL:
-      lodge::log.info("FOUND A NUM LITERAL {}", std::get<int>(t_it->val));
       return nullptr;
     case tokenType::RETURN:
-      lodge::log.info("Found a return statement");
       return parse_return_statement();
     default:
       return nullptr;
@@ -261,7 +298,7 @@ int AST::parse_program() {
   while(true) {
     std::unique_ptr<NodeBase> e{};
     if((e = parse_token()) == nullptr) {
-      print_tree();
+      // print_tree();
       return -1;
     } else {
       head->ci.emplace_back(std::move(e));
@@ -325,6 +362,7 @@ int AST::lex_buf_push(std::string &key, tokenType type, int num) {
   if(key.size() > 0) {
     t.m_type = comp_keywords(key);
     t.m_stype = key;
+    t.name = key;
     t.line = lc;
     toks.push_back(t);
   }
@@ -336,6 +374,7 @@ int AST::lex_buf_push(std::string &key, tokenType type, int num) {
   t.m_type = type;
   t.m_stype.clear();
   t.val = num;
+  t.name = key;
   for(auto &i: TOps) {
     if(t.m_type == i.second) {
       t.m_stype = i.first;
@@ -349,6 +388,7 @@ int AST::lex_buf_push(std::string &key, tokenType type) {
   Token t{};
   if(key.size() > 0) {
     t.m_type = comp_keywords(key);
+    t.name = key;
     t.m_stype = key;
     t.line = lc;
     toks.push_back(t);

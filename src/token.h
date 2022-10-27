@@ -109,6 +109,7 @@ namespace prob {
   struct Token {
   Token() = default;
   std::variant<int, std::string, char, float, long, double, short>  val;
+  std::string name{};
   tokenType m_type = NA;
   std::string m_stype{};
   int line{};

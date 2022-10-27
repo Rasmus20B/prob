@@ -45,7 +45,7 @@ private:
   std::unique_ptr<NodeBase> parse_statement();
   std::unique_ptr<NodeBase> parse_compound_statement();
   int parse_if_statement();
-  std::unique_ptr<NodeBase> parse_var_declr_statement(tokenType type, std::string id);
+  std::unique_ptr<NodeBase> parse_var_declr_statement(std::string type, std::string id);
   int parse_var_assignment_statement();
   std::unique_ptr<NodeBase> parse_function_or_assignment();
   std::unique_ptr<NodeBase> parse_expr_u();
@@ -54,17 +54,14 @@ private:
   std::unique_ptr<NodeBase> parse_num_literal_u();
   std::unique_ptr<NodeBase> parse_primary_expr_u();
   std::unique_ptr<NodeBase> parse_paren_expr_u();
-  // ast_node *parse_expr();
-  // ast_node *parse_bin_op(int prec, ast_node* lhs);
-  // ast_node *parse_identifier_expr();
-  // ast_node *parse_num_literal_expr();
-  // ast_node *parse_primary_expr();
-  // ast_node *parse_paren_expr();
   std::unique_ptr<NodeBase> parse_identifier();
   std::unique_ptr<NodeBase> parse_return_statement();
   int parse_number();
   int parse_keyword();
   std::unique_ptr<NodeBase> parse_int();
+
+  void print_compound(NodeNary* e);
+  void print_expression(NodeBinary* e);
 
 private:
   char next{};
